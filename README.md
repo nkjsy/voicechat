@@ -1,4 +1,4 @@
 Voice chat bot
 =================
 
-entry: chat-app.py
+entry: app.py
