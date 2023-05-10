@@ -1,90 +1,39 @@
+import time
 import os
-from flask import Flask, render_template
-import azure.cognitiveservices.speech as speechsdk
-import openai
-
-# This example requires environment variables named "OPEN_AI_KEY" and "OPEN_AI_ENDPOINT"
-# Your endpoint should look like the following https://YOUR_OPEN_AI_RESOURCE_NAME.openai.azure.com/
-openai.api_key = os.environ.get('OPEN_AI_KEY')
-openai.api_base = os.environ.get('OPEN_AI_ENDPOINT')
-openai.api_type = 'azure'
-openai.api_version = '2022-12-01'
-# This will correspond to the custom name you chose for your deployment when you deployed a model.
-deployment_id = 'davinci3'
-
-# This example requires environment variables named "SPEECH_KEY" and "SPEECH_REGION"
-speech_config = speechsdk.SpeechConfig(subscription=os.environ.get('SPEECH_KEY'),
-                                       region=os.environ.get('SPEECH_REGION'))
-audio_output_config = speechsdk.audio.AudioOutputConfig(use_default_speaker=True)
-audio_config = speechsdk.audio.AudioConfig(use_default_microphone=True)
-
-# Should be the locale for the speaker's language.
-speech_config.speech_recognition_language = "en-US"
-speech_recognizer = speechsdk.SpeechRecognizer(speech_config=speech_config, audio_config=audio_config)
-
-# The language of the voice that responds on behalf of Azure OpenAI.
-speech_config.speech_synthesis_voice_name = 'en-US-JennyMultilingualNeural'
-speech_synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=audio_output_config)
+from fastapi import FastAPI, UploadFile, BackgroundTasks, Header
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+import uvicorn
+import speech_to_text, text_to_speech, ai
 
 
-# Prompts Azure OpenAI with a request and synthesizes the response.
-def ask_openai(prompt):
-    # Ask Azure OpenAI
-    response = openai.Completion.create(engine=deployment_id, prompt=prompt, max_tokens=100)
-    text = response['choices'][0]['text'].replace('\n', ' ').replace(' .', '.').strip()
-    print('Azure OpenAI response:' + text)
-
-    # Azure text-to-speech output
-    speech_synthesis_result = speech_synthesizer.speak_text_async(text).get()
-
-    # Check result
-    if speech_synthesis_result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
-        print("Speech synthesized to speaker for text [{}]".format(text))
-    elif speech_synthesis_result.reason == speechsdk.ResultReason.Canceled:
-        cancellation_details = speech_synthesis_result.cancellation_details
-        print("Speech synthesis canceled: {}".format(cancellation_details.reason))
-        if cancellation_details.reason == speechsdk.CancellationReason.Error:
-            print("Error details: {}".format(cancellation_details.error_details))
+app = FastAPI()
+app.mount("/site", StaticFiles(directory="./static", html=True), name="static")
 
 
-app = Flask(__name__)
+def delete_file(filepath):
+    os.remove(filepath)
+
+# @app.get("/")
+# async def hello():
+#     print("received get request")
+#     return 'par'
+
+@app.post("/inference")
+async def infer(audio: UploadFile, background_tasks: BackgroundTasks) -> FileResponse:
+    print("received request")
+    start_time = time.time()
+
+    user_text = await speech_to_text.speech_recognize_async_from_file(audio.filename)
+    ai_text = await ai.get_response(user_text)
+
+    output_audio_filepath = await text_to_speech.speech_synthesis_to_mp3_file(ai_text)
+    background_tasks.add_task(delete_file, output_audio_filepath)
+
+    print('total processing time:', time.time() - start_time, 'seconds')
+
+    return FileResponse(path=output_audio_filepath, media_type="audio/mpeg")
 
 
-# Renders the home page
-@app.route('/')
-def home():
-    return render_template('index.html')
-
-
-# Continuously listens for speech input to recognize and send as text to Azure OpenAI
-@app.route('/', methods=['POST'])
-def chat_with_app():
-    print("Azure OpenAI is listening.")
-    try:
-        # Get audio from the microphone and then send it to the TTS service.
-        speech_recognition_result = speech_recognizer.recognize_once_async().get()
-
-        # If speech is recognized, send it to Azure OpenAI and listen for the response.
-        if speech_recognition_result.reason == speechsdk.ResultReason.RecognizedSpeech:
-            if speech_recognition_result.text == "Stop.":
-                print("Conversation ended.")
-                return render_template('end.html')
-            print("Recognized speech: {}".format(speech_recognition_result.text))
-            ask_openai(speech_recognition_result.text)
-            return render_template('index.html')
-        elif speech_recognition_result.reason == speechsdk.ResultReason.NoMatch:
-            print("No speech could be recognized: {}".format(speech_recognition_result.no_match_details))
-            return render_template('end.html')
-        elif speech_recognition_result.reason == speechsdk.ResultReason.Canceled:
-            cancellation_details = speech_recognition_result.cancellation_details
-            print("Speech Recognition canceled: {}".format(cancellation_details.reason))
-            if cancellation_details.reason == speechsdk.CancellationReason.Error:
-                print("Error details: {}".format(cancellation_details.error_details))
-            return render_template('end.html')
-    except EOFError:
-        return render_template('end.html')
-
-
-# Main function to run the chat app using flask.
-if __name__ == '__main__':
-    app.run(debug=True)
+if __name__ == "__main__":
+    uvicorn.run(app)
