@@ -14,10 +14,6 @@ app.mount("/site", StaticFiles(directory="./static", html=True), name="static")
 def delete_file(filepath):
     os.remove(filepath)
 
-# @app.get("/")
-# async def hello():
-#     print("received get request")
-#     return 'par'
 
 @app.post("/inference")
 async def infer(audio: UploadFile, background_tasks: BackgroundTasks) -> FileResponse:

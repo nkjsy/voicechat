@@ -16,7 +16,7 @@ const startRecording = async () => {
 //https://stackoverflow.com/a/57547943
 const playSilence = async () => {
     if (silenceAudioBlob) audio.src = URL.createObjectURL(silenceAudioBlob)
-    else audio.src = "/silence.mp3"
+    else audio.src = "/site/silence.mp3"
 
     await audio.play()
 }
@@ -27,13 +27,6 @@ const sendData = async data => {
     displaySpinner()
     const dd = createBody(data)
     console.log(dd.get('audio'))
-//    fetch("http://127.0.0.1:8000/", {
-//        method: "GET",
-//    })
-//        .then(handleResponse)
-//        .then(handleSuccess)
-//        .catch(handleError)
-//}
     fetch("/inference", {
         method: "POST",
         body: dd
@@ -121,7 +114,7 @@ const vibrate = () => {
 
 const fetchSilence = async () => {
     try {
-        const response = await fetch("/silence.mp3")
+        const response = await fetch("/site/silence.mp3")
         silenceAudioBlob = await response.blob()
     } catch (error) {
         console.error("Error fetching silence.mp3:", error)
