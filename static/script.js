@@ -7,7 +7,7 @@ const startRecording = async () => {
 
     navigator.mediaDevices.getUserMedia({audio: true}).then(stream => {
         console.log("starting recording")
-        mediaRecorder = new MediaRecorder(stream, {mimeType: 'audio/webm;codecs=opus'})
+        mediaRecorder = new MediaRecorder(stream, {mimeType: 'audio/webm;codecs=pcm'})
         mediaRecorder.ondataavailable = event => sendData(event.data)
         mediaRecorder.start()
     })
@@ -46,8 +46,8 @@ const createBody = data => {
 }
 
 const getMimeType = () => {
-    if (MediaRecorder.isTypeSupported('audio/wav;codecs=opus')) {
-        return 'audio/wav;codecs=opus'
+    if (MediaRecorder.isTypeSupported('audio/wav;codecs=pcm')) {
+        return 'audio/wav;codecs=pcm'
     } else throw new Error("No supported audio Mime types in this browser")
 }
 
@@ -88,7 +88,7 @@ const validate = async data => {
 }
 
 const getFileName = () => {
-    if (MediaRecorder.isTypeSupported('audio/wav;codecs=opus')) {
+    if (MediaRecorder.isTypeSupported('audio/wav;codecs=pcm')) {
         return 'audio.wav'
     } else throw new Error("No supported audio Mime types in this browser")
 }
