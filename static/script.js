@@ -7,7 +7,7 @@ const startRecording = async () => {
 
     navigator.mediaDevices.getUserMedia({audio: true}).then(stream => {
         console.log("starting recording")
-        mediaRecorder = new MediaRecorder(stream, {mimeType: 'audio/wav'})
+        mediaRecorder = new MediaRecorder(stream, {mimeType: 'audio/webm;codecs=opus'})
         mediaRecorder.ondataavailable = event => sendData(event.data)
         mediaRecorder.start()
     })
