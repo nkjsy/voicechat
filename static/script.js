@@ -46,8 +46,8 @@ const createBody = data => {
 }
 
 const getMimeType = () => {
-    if (MediaRecorder.isTypeSupported('audio/wav;codecs=pcm')) {
-        return 'audio/wav;codecs=pcm'
+    if (MediaRecorder.isTypeSupported('audio/webm;codecs=pcm')) {
+        return 'audio/webm;codecs=pcm'
     } else throw new Error("No supported audio Mime types in this browser")
 }
 
@@ -88,7 +88,7 @@ const validate = async data => {
 }
 
 const getFileName = () => {
-    if (MediaRecorder.isTypeSupported('audio/wav;codecs=pcm')) {
+    if (MediaRecorder.isTypeSupported('audio/webm;codecs=pcm')) {
         return 'audio.wav'
     } else throw new Error("No supported audio Mime types in this browser")
 }
