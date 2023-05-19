@@ -1,8 +1,9 @@
 import time
 import os
-from fastapi import FastAPI, UploadFile, BackgroundTasks, Header
+from fastapi import FastAPI, UploadFile, BackgroundTasks
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+import moviepy.editor as mp
 import uvicorn
 import speech_to_text, text_to_speech, ai
 
@@ -20,7 +21,13 @@ async def infer(audio: UploadFile, background_tasks: BackgroundTasks) -> FileRes
     print("received request")
     start_time = time.time()
 
-    user_text = await speech_to_text.speech_recognize_async_from_file(audio.filename)
+    # transform audio type from webm to wav
+    audio_input_source = audio.filename
+    audio_output_source = audio_input_source.replace('.webm', '.wav')
+    clip = mp.AudioFileClip(audio_input_source)
+    clip.write_audiofile(audio_output_source)
+
+    user_text = await speech_to_text.speech_recognize_async_from_file(audio_output_source)
     ai_text = await ai.get_response(user_text)
 
     output_audio_filepath = await text_to_speech.speech_synthesis_to_mp3_file(ai_text)

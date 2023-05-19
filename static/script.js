@@ -89,7 +89,7 @@ const validate = async data => {
 
 const getFileName = () => {
     if (MediaRecorder.isTypeSupported('audio/webm;codecs=pcm')) {
-        return 'audio.wav'
+        return 'audio.webm'
     } else throw new Error("No supported audio Mime types in this browser")
 }
 
