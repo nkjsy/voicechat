@@ -7,7 +7,7 @@ const startRecording = async () => {
 
     navigator.mediaDevices.getUserMedia({audio: true}).then(stream => {
         console.log("starting recording")
-        mediaRecorder = new MediaRecorder(stream)
+        mediaRecorder = new MediaRecorder(stream, {mimeType: 'audio/wav'})
         mediaRecorder.ondataavailable = event => sendData(event.data)
         mediaRecorder.start()
     })
@@ -25,11 +25,9 @@ const sendData = async data => {
     await validate(data)
 
     displaySpinner()
-    const dd = createBody(data)
-    console.log(dd.get('audio'))
     fetch("/inference", {
         method: "POST",
-        body: dd
+        body: createBody(data)
     })
         .then(handleResponse)
         .then(handleSuccess)
@@ -48,12 +46,8 @@ const createBody = data => {
 }
 
 const getMimeType = () => {
-    if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
-        return 'audio/webm;codecs=opus'
-    } else if (MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')) {
-        return 'audio/ogg;codecs=opus'
-    } else if (MediaRecorder.isTypeSupported('video/mp4;codecs=mp4a')) {
-        return 'video/mp4;codecs=mp4a'
+    if (MediaRecorder.isTypeSupported('audio/wav;codecs=opus')) {
+        return 'audio/wav;codecs=opus'
     } else throw new Error("No supported audio Mime types in this browser")
 }
 
@@ -94,12 +88,8 @@ const validate = async data => {
 }
 
 const getFileName = () => {
-    if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
-        return 'audio.webm'
-    } else if (MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')) {
-        return 'audio.ogg'
-    } else if (MediaRecorder.isTypeSupported('video/mp4;codecs=mp4a')) {
-        return 'audio.mp4'
+    if (MediaRecorder.isTypeSupported('audio/wav;codecs=opus')) {
+        return 'audio.wav'
     } else throw new Error("No supported audio Mime types in this browser")
 }
 
