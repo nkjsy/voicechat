@@ -47,5 +47,5 @@ async def infer(audio: UploadFile, background_tasks: BackgroundTasks) -> FileRes
     return FileResponse(path=output_audio_filepath, media_type="audio/mpeg")
 
 
-if __name__ == "__main__":
-    uvicorn.run(app, port=9000)
+# if __name__ == "__main__":
+#     uvicorn.run(app, port=9000)
