@@ -7,7 +7,6 @@ import moviepy.editor as mp
 import uvicorn
 import speech_to_text, text_to_speech, ai
 
-
 app = FastAPI()
 app.mount("/site", StaticFiles(directory="./static", html=True), name="static")
 
@@ -22,21 +21,31 @@ async def infer(audio: UploadFile, background_tasks: BackgroundTasks) -> FileRes
     start_time = time.time()
 
     # transform audio type from webm to wav
-    audio_input_source = audio.filename
-    audio_output_source = audio_input_source.replace('.webm', '.wav')
-    clip = mp.AudioFileClip(audio_input_source)
-    clip.write_audiofile(audio_output_source)
+    audio_webm = audio.filename
+    try:
+        contents = audio.file.read()
+        with open(audio_webm, 'wb') as f:
+            f.write(contents)
+    except Exception:
+        print(f"There was an error uploading the file {audio_webm}")
+    finally:
+        audio.file.close()
+    audio_wav = audio_webm.replace('.webm', '.wav')
+    clip = mp.AudioFileClip(audio_webm)
+    clip.write_audiofile(audio_wav)
 
-    user_text = await speech_to_text.speech_recognize_async_from_file(audio_output_source)
+    user_text = await speech_to_text.speech_recognize_async_from_file(audio_wav)
     ai_text = await ai.get_response(user_text)
 
     output_audio_filepath = await text_to_speech.speech_synthesis_to_mp3_file(ai_text)
     background_tasks.add_task(delete_file, output_audio_filepath)
+    background_tasks.add_task(delete_file, audio_webm)
+    background_tasks.add_task(delete_file, audio_wav)
 
     print('total processing time:', time.time() - start_time, 'seconds')
 
     return FileResponse(path=output_audio_filepath, media_type="audio/mpeg")
 
 
-# if __name__ == "__main__":
-#     uvicorn.run(app)
+if __name__ == "__main__":
+    uvicorn.run(app, port=9000)
